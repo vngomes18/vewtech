@@ -1,0 +1,106 @@
+/* client/src/components/dashboards/administrador/AdministradorDashboard.css */
+.admin-dashboard {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 20px auto;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-dashboard h1 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.admin-dashboard h2 {
+  color: #555;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
+
+/* Filtros e Botão de Exportação */
+.filtros-consumo {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.filtros-consumo label {
+  font-weight: bold;
+  color: #333;
+}
+
+.filtros-consumo input {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  width: 80px; /* Largura menor para mês/ano */
+}
+
+.filtros-consumo button {
+  background-color: #17a2b8; /* Cor para exportar */
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: auto; /* Empurra o botão para a direita */
+}
+
+.filtros-consumo button:hover {
+  background-color: #138496;
+}
+
+/* Tabela de Consumo Admin */
+.consumo-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.consumo-admin-table th,
+.consumo-admin-table td {
+  border: 1px solid #eee;
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.consumo-admin-table th {
+  background-color: #e9ecef;
+  color: #333;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.consumo-admin-table tbody tr:nth-child(even) {
+  background-color: #f6f6f6;
+}
+
+.consumo-admin-table tbody tr:hover {
+  background-color: #e2f0ff;
+}
+
+.dashboard-geral-section,
+.log-atividades-section {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-top: 20px;
+}

@@ -9,8 +9,8 @@ function ZeladorDashboard() {
   const [formMorador, setFormMorador] = useState({
     id: null,
     nome: '',
-    apartamento: '',
-    bloco: '',
+    rua: '', // Alterado de 'apartamento' para 'rua'
+    lote: '', // Alterado de 'bloco' para 'lote'
     email: '',
     telefone: '',
   });
@@ -27,7 +27,9 @@ function ZeladorDashboard() {
       const { data, error } = await supabase
         .from('moradores')
         .select('*')
-        .order('apartamento', { ascending: true });
+        // Alterado de 'apartamento' para 'rua' e 'bloco' para 'lote' na ordenação
+        .order('rua', { ascending: true })
+        .order('lote', { ascending: true });
 
       if (error) {
         throw error;
@@ -44,8 +46,9 @@ function ZeladorDashboard() {
   async function handleSubmitForm(event) {
     event.preventDefault();
 
-    if (!formMorador.nome || !formMorador.apartamento || !formMorador.bloco) {
-      alert('Nome, Apartamento e Bloco são obrigatórios.');
+    // Validação básica com os novos nomes
+    if (!formMorador.nome || !formMorador.rua || !formMorador.lote) {
+      alert('Nome, Rua e Lote são obrigatórios.'); // Mensagem atualizada
       return;
     }
 
@@ -86,8 +89,8 @@ function ZeladorDashboard() {
           .from('moradores')
           .update({
             nome: formMorador.nome,
-            apartamento: formMorador.apartamento,
-            bloco: formMorador.bloco,
+            rua: formMorador.rua, // Alterado aqui
+            lote: formMorador.lote, // Alterado aqui
             email: formMorador.email || null,
             telefone: formMorador.telefone || null,
           })
@@ -100,8 +103,8 @@ function ZeladorDashboard() {
           .insert([
             {
               nome: formMorador.nome,
-              apartamento: formMorador.apartamento,
-              bloco: formMorador.bloco,
+              rua: formMorador.rua, // Alterado aqui
+              lote: formMorador.lote, // Alterado aqui
               email: formMorador.email || null,
               telefone: formMorador.telefone || null,
             }
@@ -139,16 +142,16 @@ function ZeladorDashboard() {
           alert(alertMessage);
           console.error('Erro ao criar conta de usuário (signUp):', userAuthError);
         } else {
-          alert(`Morador ${formMorador.nome} ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso! A conta de login foi criada. O morador poderá entrar com seu e-mail e o telefone como senha. (Pode ser necessária verificação de e-mail, verifique as configurações do Supabase Auth).`);
+          alert(`Morador ${formMorador.nome} ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso! A conta de login foi criada. O morador poderá entrar com seu e-mail e o telefone como senha. (Pode ser necessária verificação de e-mail).`);
           console.log('Conta de usuário Auth criada para:', formMorador.email);
         }
       } else if (!isEditing) {
-        alert(`Morador ${formMorador.nome} cadastrado com sucesso! Sem conta de login criada (e-mail ou telefone não fornecidos para login).`);
+        alert(`Morador ${formMorador.nome} cadastrado com sucesso! Sem conta de login criada (e-mail ou telefone não fornecidos).`);
       } else if (isEditing) {
         alert(`Morador ${formMorador.nome} atualizado com sucesso!`);
       }
 
-      setFormMorador({ nome: '', apartamento: '', bloco: '', email: '', telefone: '', id: null });
+      setFormMorador({ nome: '', rua: '', lote: '', email: '', telefone: '', id: null }); // Alterado aqui
       setShowForm(false);
       setIsEditing(false);
       fetchMoradores();
@@ -170,89 +173,7 @@ function ZeladorDashboard() {
     setShowForm(true);
   };
 
-  // Lida com o clique no botão "Remover"
-  async function handleDeleteClick(moradorId, moradorNome, moradorEmail) { // Adicionamos moradorEmail
-    if (!window.confirm(`Tem certeza que deseja remover o morador ${moradorNome}? Esta ação é irreversível e removerá todos os registros vinculados a ele, INCLUINDO SUA CONTA DE LOGIN.`)) {
-      return;
-    }
-
-    try {
-      // 1. Opcional: Buscar o user_id associado ao e-mail do morador na tabela perfis
-      // Precisamos do user_id (UID do Auth) para deletar o usuário do Auth.Users.
-      let authUserIdToDelete = null;
-      if (moradorEmail) {
-          const { data: perfilData, error: perfilError } = await supabase
-              .from('perfis')
-              .select('id') // O 'id' na tabela 'perfis' é o user_id do Auth
-              .eq('morador_id', moradorId) // Busca o perfil pelo morador_id
-              .single();
-
-          if (perfilError && perfilError.code !== 'PGRST116') { // 406 = No rows found (Não é um erro real)
-              console.warn('Erro ao buscar perfil para deletar (pode não existir):', perfilError.message);
-          } else if (perfilData) {
-              authUserIdToDelete = perfilData.id;
-          }
-      }
-
-      // 2. Remover registros de consumo de água vinculados a este morador
-      const { error: deleteConsumoError } = await supabase
-        .from('consumo_agua')
-        .delete()
-        .eq('morador_id', moradorId);
-
-      if (deleteConsumoError) {
-        console.error('Erro ao remover registros de consumo vinculados:', deleteConsumoError.message);
-      }
-
-      // 3. Remover o perfil da tabela 'perfis'
-      // É importante remover o perfil ANTES de remover o morador, para evitar FK errors
-      // e porque o perfil aponta para o morador_id.
-      const { error: deletePerfilError } = await supabase
-        .from('perfis')
-        .delete()
-        .eq('morador_id', moradorId); // Remove o perfil pelo morador_id
-
-      if (deletePerfilError) {
-        console.error('Erro ao remover perfil vinculado:', deletePerfilError.message);
-      }
-
-
-      // 4. Remover o morador da tabela 'moradores'
-      const { error: deleteMoradorError } = await supabase
-        .from('moradores')
-        .delete()
-        .eq('id', moradorId);
-
-      if (deleteMoradorError) {
-        throw deleteMoradorError;
-      }
-
-      // 5. Chamar a Edge Function para deletar o usuário do Supabase Auth.Users (se houver um user_id)
-      if (authUserIdToDelete) {
-          console.log(`Chamando Edge Function para deletar usuário Auth: ${authUserIdToDelete}`);
-          const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('delete-user-auth', {
-              body: { userId: authUserIdToDelete },
-              method: 'POST',
-          });
-
-          if (edgeFunctionError) {
-              console.error('Erro ao chamar Edge Function para deletar usuário Auth:', edgeFunctionError.message);
-              alert(`Morador ${moradorNome} removido, mas houve um erro ao remover a conta de login. Por favor, remova manualmente a conta do usuário ${moradorEmail} no dashboard do Supabase.`);
-          } else {
-              console.log('Edge Function de deleção de usuário Auth executada:', edgeFunctionData);
-              alert(`Morador ${moradorNome} e sua conta de login foram removidos com sucesso!`);
-          }
-      } else {
-          alert(`Morador ${moradorNome} removido com sucesso! Nenhuma conta de login vinculada ou encontrada para remover.`);
-      }
-
-      fetchMoradores(); // Recarrega a lista de moradores
-
-    } catch (error) {
-      console.error('Erro fatal ao remover morador:', error.message);
-      alert('Erro ao remover morador: ' + error.message);
-    }
-  }
+  // Função handleDeleteClick foi removida para o AdministradorDashboard.jsx
 
   if (loading) {
     return (
@@ -272,7 +193,7 @@ function ZeladorDashboard() {
         <button onClick={() => {
             setShowForm(!showForm);
             setIsEditing(false);
-            setFormMorador({ nome: '', apartamento: '', bloco: '', email: '', telefone: '', id: null });
+            setFormMorador({ nome: '', rua: '', lote: '', email: '', telefone: '', id: null }); // Alterado aqui
         }}>
           {showForm ? 'Ocultar Formulário' : 'Adicionar Novo Morador'}
         </button>
@@ -289,17 +210,17 @@ function ZeladorDashboard() {
             />
             <input
               type="text"
-              name="apartamento"
-              placeholder="Número do Apartamento"
-              value={formMorador.apartamento}
+              name="rua" // Alterado aqui
+              placeholder="Número da Rua" // Alterado aqui
+              value={formMorador.rua}
               onChange={handleChange}
               required
             />
             <input
               type="text"
-              name="bloco"
-              placeholder="Bloco"
-              value={formMorador.bloco}
+              name="lote" // Alterado aqui
+              placeholder="Número do Lote" // Alterado aqui
+              value={formMorador.lote}
               onChange={handleChange}
               required
             />
@@ -324,7 +245,7 @@ function ZeladorDashboard() {
                 onClick={() => {
                   setShowForm(false);
                   setIsEditing(false);
-                  setFormMorador({ nome: '', apartamento: '', bloco: '', email: '', telefone: '', id: null });
+                  setFormMorador({ nome: '', rua: '', lote: '', email: '', telefone: '', id: null }); // Alterado aqui
                 }}
                 className="cancel-button"
               >
@@ -345,8 +266,8 @@ function ZeladorDashboard() {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>Apartamento</th>
-                <th>Bloco</th>
+                <th>Rua</th> {/* Alterado aqui */}
+                <th>Lote</th> {/* Alterado aqui */}
                 <th>E-mail</th>
                 <th>Telefone</th>
                 <th>Ações</th>
@@ -356,14 +277,13 @@ function ZeladorDashboard() {
               {moradores.map((morador) => (
                 <tr key={morador.id}>
                   <td>{morador.nome}</td>
-                  <td>{morador.apartamento}</td>
-                  <td>{morador.bloco}</td>
+                  <td>{morador.rua}</td> {/* Alterado aqui */}
+                  <td>{morador.lote}</td> {/* Alterado aqui */}
                   <td>{morador.email}</td>
                   <td>{morador.telefone}</td>
                   <td>
                     <button onClick={() => handleEditClick(morador)} className="action-button edit-button">Editar</button>
-                    {/* Passamos o email do morador também para a função de deletar */}
-                    <button onClick={() => handleDeleteClick(morador.id, morador.nome, morador.email)} className="action-button delete-button">Remover</button>
+                    {/* Botão "Remover" removido daqui */}
                   </td>
                 </tr>
               ))}
